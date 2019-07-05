@@ -13,6 +13,8 @@ describe('testStory', () => {
   const kind = 'Kind';
   const story = 'Story';
   const filename = `${configurationName}_${kind}_${story}.png`;
+  const locale = "en";
+  const filenameWithLocale  = `${configurationName}_${kind}_${story}_${locale}.png`;
 
   const executeWithOptions = options =>
     testStory(
@@ -51,6 +53,28 @@ describe('testStory', () => {
       await executeWithOptions(options);
 
       const referencePath = `${options.referenceDir}/${filename}`;
+
+      expect(target.captureScreenshotForStory).toHaveBeenCalledWith(
+        kind,
+        story,
+        referencePath,
+        options,
+        configuration
+      );
+    });
+    
+    it('adds locale to filename if presented in options', async () => {
+      const options = {
+        requireReference: false,
+        outputDir: `${__dirname}/outputDir`,
+        referenceDir: `${__dirname}/referenceDir`,
+        differenceDir: `${__dirname}/differenceDir`,
+        locale,
+      };
+
+      await executeWithOptions(options);
+
+      const referencePath = `${options.referenceDir}/${filenameWithLocale}`;
 
       expect(target.captureScreenshotForStory).toHaveBeenCalledWith(
         kind,
