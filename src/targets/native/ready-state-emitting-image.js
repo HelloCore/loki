@@ -12,8 +12,7 @@ const IMAGE_LOAD_TIMEOUT = 20000;
 class ReadyStateEmittingImage extends React.Component {
   constructor(props) {
     super(props);
-
-    if (props.source) {
+    if (props.source && typeof(props.source) !== 'number') {
       registerPendingPromise(
         new Promise((resolve, reject) => {
           this.resolve = value => {

@@ -22,7 +22,8 @@ async function testStory(
   story
 ) {
   const basename = getBaseName(configurationName, kind, story);
-  const filename = `${basename}.png`;
+  const locale = `${options.locale}`
+  const filename = `${basename}_${locale}.png`;
   const outputPath = `${options.outputDir}/${filename}`;
   const referencePath = `${options.referenceDir}/${filename}`;
   const diffPath = `${options.differenceDir}/${filename}`;

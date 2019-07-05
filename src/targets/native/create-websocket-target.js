@@ -7,7 +7,7 @@ const { withTimeout, withRetries } = require('../../failure-handling');
 const MESSAGE_PREFIX = 'loki:';
 const NATIVE_ERROR_TYPE = `${MESSAGE_PREFIX}error`;
 
-function createWebsocketTarget(socketUri, platform, saveScreenshotToFile) {
+function createWebsocketTarget(socketUri, platform, saveScreenshotToFile, locale) {
   let socket;
   const messageQueue = createMessageQueue(NATIVE_ERROR_TYPE);
 
@@ -81,6 +81,7 @@ function createWebsocketTarget(socketUri, platform, saveScreenshotToFile) {
 
   const prepare = withRetries(5)(async () => {
     sendLokiCommand('prepare');
+    sendLokiCommand('changeLocale', { locale });
     await waitForLokiMessage('didPrepare');
   });
 

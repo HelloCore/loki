@@ -48,6 +48,7 @@ function parseOptions(args, config) {
     configurationFilter: argv.configurationFilter || argv._[1],
     dockerWithSudo: $('dockerWithSudo'),
     chromeDockerWithoutSeccomp: $('chromeDockerWithoutSeccomp'),
+    locale: $('locale'),
   };
 }
 

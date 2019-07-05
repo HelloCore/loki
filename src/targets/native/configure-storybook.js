@@ -74,7 +74,17 @@ function getAddonsChannel() {
   });
 }
 
-async function configureStorybook() {
+/**
+ * @typedef { (locale: string) => void } OnChangeLocale
+ * @typedef { () => void } CallBack
+ * @typedef { { 
+ *    onChangeLocale?: OnChangeLocale,
+ *    onPrepare?: CallBack,
+ *    onRestore?: CallBack,
+ *  } } Options
+ * @param {Options} options 
+ */
+async function configureStorybook(options = {}) {
   injectLokiGlobalErrorHandler();
 
   // Decorate the storiesOf function to be able to skip stories
@@ -90,27 +100,28 @@ async function configureStorybook() {
   const channel = await getAddonsChannel();
   const platform = ReactNative.Platform.OS;
 
-  const on = (eventName, callback) =>
+  const on = (eventName, callback) =>{
     channel.on(`${MESSAGE_PREFIX}${eventName}`, params => {
       if (params && params.platform === platform) {
         callback(params);
       }
     });
+  }
 
-  const emit = (eventName, params = {}) =>
-    channel.emit(
+  const emit = (eventName, params = {}) =>{
+  channel.emit(
       `${MESSAGE_PREFIX}${eventName}`,
       Object.assign({ platform }, params)
     );
-
+  }
   const originalState = {
-    statusBarHidden: false, // TODO: get actual value
+    // statusBarHidden: false, // TODO: get actual value
     disableYellowBox: console.disableYellowBox, // eslint-disable-line no-console
   };
 
   const restore = () => {
     customErrorHandler = null;
-    ReactNative.StatusBar.setHidden(originalState.statusBarHidden);
+    // ReactNative.StatusBar.setHidden(originalState.statusBarHidden);
     // eslint-disable-next-line no-console
     console.disableYellowBox = originalState.disableYellowBox;
   };
@@ -134,19 +145,31 @@ async function configureStorybook() {
     if (hasDevSettings) {
       DevSettings.setHotLoadingEnabled(false);
     }
-    ReactNative.StatusBar.setHidden(true, 'none');
+    // ReactNative.StatusBar.setHidden(true, 'none');
     // eslint-disable-next-line no-console
     console.disableYellowBox = true;
   };
 
   on('prepare', () => {
     prepare();
+    if(options.onPrepare != null){
+      options.onPrepare();
+    }
     setTimeout(() => emit('didPrepare'), platform === 'android' ? 500 : 0);
   });
 
   on('restore', () => {
     restore();
+    if(options.onRestore != null) {
+      options.onRestore();
+    }
     emit('didRestore');
+  });
+
+  on('changeLocale', (params)=>{
+    if(options.onChangeLocale != null){
+      options.onChangeLocale(params.locale);
+    }
   });
 
   on('getStories', () => {
