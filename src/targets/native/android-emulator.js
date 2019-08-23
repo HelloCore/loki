@@ -3,7 +3,7 @@ const createWebsocketTarget = require('./create-websocket-target');
 
 const saveScreenshotToFile = filename => osnap.saveToFile({ filename });
 
-const createAndroidEmulatorTarget = socketUri =>
-  createWebsocketTarget(socketUri, 'android', saveScreenshotToFile);
+const createAndroidEmulatorTarget = (socketUri, locale) =>
+  createWebsocketTarget(socketUri, 'android', saveScreenshotToFile, locale);
 
 module.exports = createAndroidEmulatorTarget;

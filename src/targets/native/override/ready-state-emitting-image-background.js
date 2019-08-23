@@ -1,28 +1,28 @@
-/**
- * This replaces the React Native Image component to register when it's finished
- * loading to avoid race conditions in visual tests.
- */
+/* eslint-disable react/destructuring-assignment */
 const React = require('react');
-const Image = require('react-native/Libraries/Image/Image');
+const ImageBackground = require('react-native/Libraries/Image/ImageBackground');
 const hoistNonReactStatics = require('hoist-non-react-statics');
-const { registerPendingPromise } = require('../ready-state-manager');
+const { registerPendingPromise } = require('../../ready-state-manager');
 
 const IMAGE_LOAD_TIMEOUT = 20000;
 
-class ReadyStateEmittingImage extends React.Component {
-  constructor(props) {
-    super(props);
+class ReadyStateEmittingImageBackground extends React.Component {
+  componentWillMount() {
+    if (this.props.source) {
+      this.isCompleted = false;
 
-    if (props.source) {
       registerPendingPromise(
         new Promise((resolve, reject) => {
           this.resolve = value => {
+            if (this.isCompleted === false) {
+              this.isCompleted = true;
+            }
             resolve(value);
             clearTimeout(this.timer);
           };
           this.timer = setTimeout(() => {
-            const url = props.source.uri;
-            const message = `Image "${url}" failed to load within ${IMAGE_LOAD_TIMEOUT}ms`;
+            const url = this.props.source.uri;
+            const message = `ImageBackground "${url}" failed to load within ${IMAGE_LOAD_TIMEOUT}ms`;
             reject(new Error(message));
           }, IMAGE_LOAD_TIMEOUT);
         })
@@ -31,7 +31,13 @@ class ReadyStateEmittingImage extends React.Component {
   }
 
   componentWillUnmount() {
-    clearTimeout(this.timer);
+    if (this.props.source) {
+      if (this.resolve) {
+        this.resolve();
+        this.resolve = null;
+      }
+      clearTimeout(this.timer);
+    }
   }
 
   setNativeProps = (...args) => {
@@ -55,7 +61,7 @@ class ReadyStateEmittingImage extends React.Component {
 
   render() {
     return (
-      <Image
+      <ImageBackground
         {...this.props}
         ref={this.handleRef}
         fadeDuration={0}
@@ -65,6 +71,6 @@ class ReadyStateEmittingImage extends React.Component {
   }
 }
 
-hoistNonReactStatics(ReadyStateEmittingImage, Image);
+hoistNonReactStatics(ReadyStateEmittingImageBackground, ImageBackground);
 
-module.exports = ReadyStateEmittingImage;
+module.exports = ReadyStateEmittingImageBackground;

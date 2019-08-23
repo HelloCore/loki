@@ -1,6 +1,6 @@
 const fs = require('fs-extra');
-const path = require('path');
 const { slugify } = require('transliteration');
+const glob = require('glob');
 const { ReferenceImageError } = require('../../errors');
 const { getImageDiffer } = require('../../diffing');
 
@@ -22,14 +22,31 @@ async function testStory(
   story
 ) {
   const basename = getBaseName(configurationName, kind, story);
-  const filename = `${basename}.png`;
+  const locale = `${options.locale}`;
+  const filename = `${basename}_${locale}.png`;
   const outputPath = `${options.outputDir}/${filename}`;
   const referencePath = `${options.referenceDir}/${filename}`;
-  const diffPath = `${options.differenceDir}/${filename}`;
-  const referenceExists = await fs.pathExists(referencePath);
+  // const diffPath = `${options.differenceDir}/${filename}`;
+  // const referenceExists = await fs.pathExists(referencePathForChecking);
+  const referenceExists = await new Promise(resolve => {
+    glob(
+      `${options.referenceDir}/${basename}*_${locale}.png`,
+      (error, files) => {
+        if (error) {
+          resolve(false);
+          return;
+        }
+        if (files != null && files.length > 0) {
+          resolve(true);
+        } else {
+          resolve(false);
+        }
+      }
+    );
+  });
+
   const shouldUpdateReference =
     options.updateReference || (!options.requireReference && !referenceExists);
-
   await target.captureScreenshotForStory(
     kind,
     story,
@@ -46,21 +63,80 @@ async function testStory(
     throw new ReferenceImageError('No reference image found', kind, story);
   }
 
-  const isEqual = await getImageDiffer(
-    options.diffingEngine,
-    options[options.diffingEngine]
-  )(referencePath, outputPath, diffPath, tolerance);
+  const outputFileNames = await new Promise(resolve => {
+    glob(`${options.outputDir}/${basename}*_${locale}.png`, (error, files) => {
+      if (error) {
+        resolve([]);
+        return;
+      }
+      if (files != null && files.length > 0) {
+        resolve(
+          files.map(file => {
+            const fileArr = file.split('/');
+            return fileArr[fileArr.length - 1];
+          })
+        );
+      } else {
+        resolve([]);
+      }
+    });
+  });
 
-  if (!isEqual) {
-    throw new ReferenceImageError(
-      `Screenshot differs from reference, see ${path.relative(
-        path.resolve('./'),
-        diffPath
-      )}`,
-      kind,
-      story
-    );
+  if (outputFileNames.length === 0) {
+    throw new ReferenceImageError('No output image found', kind, story);
   }
+
+  const comparedResults = outputFileNames.map(async fileName => {
+    const isRefExists = fs.pathExists(`${options.referenceDir}/${fileName}`);
+    if (!isRefExists) {
+      return null;
+    }
+
+    const isEqual = await getImageDiffer(
+      options.diffingEngine,
+      options[options.diffingEngine]
+    )(
+      `${options.referenceDir}/${fileName}`,
+      `${options.outputDir}/${fileName}`,
+      `${options.differenceDir}/${fileName}`,
+      tolerance
+    );
+
+    if (isEqual) {
+      return null;
+    }
+    return `${options.differenceDir}/${fileName}`;
+  });
+
+  const results = await Promise.all(comparedResults);
+  const message = results.reduce((acc, value) => {
+    if (value != null) {
+      if (acc != null) {
+        return `Screenshot differs from reference, see ${value}`;
+      }
+      return `${acc}, value`;
+    }
+    return acc;
+  }, '');
+
+  if (message.length > 0) {
+    throw new ReferenceImageError(message, kind, story);
+  }
+  // const isEqual = await getImageDiffer(
+  //   options.diffingEngine,
+  //   options[options.diffingEngine]
+  // )(referencePath, outputPath, diffPath, tolerance);
+
+  // if (!isEqual) {
+  //   throw new ReferenceImageError(
+  //     `Screenshot differs from reference, see ${path.relative(
+  //       path.resolve('./'),
+  //       diffPath
+  //     )}`,
+  //     kind,
+  //     story
+  //   );
+  // }
 }
 
 module.exports = testStory;

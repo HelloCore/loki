@@ -76,7 +76,7 @@ async function runTests(flatConfigurations, options) {
     target,
     configurations,
     concurrency = 1,
-    tolerance = 0
+    tolerance = 0.01
   ) => {
     let storybook;
 
@@ -191,14 +191,14 @@ async function runTests(flatConfigurations, options) {
       case 'ios.simulator': {
         return getTargetTasks(
           'iOS Simulator',
-          createIOSSimulatorTarget(options.reactNativeUri),
+          createIOSSimulatorTarget(options.reactNativeUri, options.locale),
           configurations
         );
       }
       case 'android.emulator': {
         return getTargetTasks(
           'Android Emulator',
-          createAndroidEmulatorTarget(options.reactNativeUri),
+          createAndroidEmulatorTarget(options.reactNativeUri, options.locale),
           configurations
         );
       }

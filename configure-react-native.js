@@ -1,1 +1,3 @@
-require('./src/targets/native/configure-storybook')();
+const configLokiStorybook = require('./src/targets/native/configure-storybook');
+
+module.exports = configLokiStorybook;
